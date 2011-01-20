@@ -1,0 +1,26 @@
+RNIE 1.0
+========
+
+Installation instructions
+=========================
+
+Download and install Infernal:
+http://selab.janelia.org/software.html
+
+Make sure the binaries cmsearch, cmalign and esl-sfetch are in your path. 
+
+You can optionally set the RNIE environment variable with:
+    In bash (add to ~/.bashrc):
+    export RNIE=/path/to/rnie/directory/
+    In csh (add to ~/.cshrc): 
+    setenv RNIE /path/to/rnie/directory/
+
+If rnie.pl is executable then you should be good to go!
+
+Benchmark
+=========================
+If you are interested in the RNIE benchmark then download the seperate rnie-benchmark file, the run:
+mv rnie-benchmark $RNIE/benchmark
+and follow the information in the README files. 
+
+
