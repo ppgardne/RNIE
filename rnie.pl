@@ -59,15 +59,18 @@ else {
     $model          = $modelGene                 if ( not defined $model);
     $cmsearchThresh = $cmsearchThreshDefaultGene if ( not defined $cmsearchThresh && not defined $cmsearchEvalue); 
 }
-$fastaRoot  = fileRoot($fastafile)               if ( not defined $fastaRoot);
+$fastaRoot  = fileRoot($fastafile)               if ((not defined $fastaRoot) && (defined $fastafile) && (length($fastafile)>0));
+
 $gffOut     = 1                                  if ((not defined $gffOut)     && (not defined $emblOut) && (not defined $alnOut));
 $modelRoot  = fileRoot($model)                   if (     defined $model);
-$fastaRoot .= '-' . $modelRoot                   if (     defined $modelRoot);
-$fastaRoot  =~ s/\.cm$//;
-$fastaRoot .= 'Mode';
+$fastaRoot .= '-' . $modelRoot                   if (     defined $modelRoot && defined $fastaRoot);
+$fastaRoot  =~ s/\.cm$//                         if (     defined $fastaRoot);      
+$fastaRoot .= 'Mode'                             if (     defined $fastaRoot);
 
 printf "Config:\n"                               if $verbose;
-print  "\tRNIE:            [".$ENV{'RNIE'}."]\n" if ($verbose && defined $ENV{'RNIE'});
+print  "\tRNIE directory:  [".$ENV{'RNIE'}."]\n" if ($verbose && defined $ENV{'RNIE'});
+printf "\tfastaFile input: [$fastafile]\n"       if ($verbose && defined $fastafile);
+printf "\ttabFile input:   [$tabfile]\n"         if ($verbose && defined $tabfile);
 printf "\tfastaRoot:       [$fastaRoot]\n"       if ($verbose && defined $fastaRoot);
 printf "\tmodelsDir:       [$modelsDir]\n"       if ($verbose && defined $modelsDir);
 printf "\tgenome:          [$genome]\n"          if ($verbose && defined $genome);
@@ -126,7 +129,9 @@ if(!$tabfile && $fastafile){
 
 my @cmNames;
 if(-s $tabfile){
-    $fastaRoot = fileRoot($tabfile) if not defined $fastaRoot;
+    #print "tabfile: [$tabfile]\n" if (defined $verbose);
+    $fastaRoot = fileRoot($tabfile) if ((not defined $fastaRoot) && (defined $tabfile));
+    #print "tabfileRoot: [$fastaRoot]\n" if (defined $verbose);
     my (%store);
     my ($counter,$cmName)=(10000,'');
 #    open(F, "grep -v ^'#' $tabfile | sort -k6nr | ") or die "FATAL: could not open pipe for reading $tabfile\n[$!]";
@@ -168,9 +173,9 @@ if(-s $tabfile){
   }
     
     #Print results to output file(s)
-    print "Writing output to [$fastaRoot\-rnie.gff]\n"  if ($verbose && $gffOut);
+    print "\tGFF output:      [$fastaRoot\-rnie.gff]\n"  if ($verbose && $gffOut);
     open(GFF, "> $fastaRoot\-rnie.gff")  if $gffOut;
-    print "Writing output to [$fastaRoot\-rnie.embl]\n" if ($verbose && $emblOut);
+    print "\tEMBL output:     [$fastaRoot\-rnie.embl]\n" if ($verbose && $emblOut);
     open(EMBL, "> $fastaRoot\-rnie.embl") if $emblOut;
     my (%alnFileNames,%alnFilePointers);
     if ($alnOut){
@@ -224,7 +229,7 @@ FT                    /gene=\42terminator" . $tag . "\42\n";
 	    system("esl-sfetch -o ". $alnFileNames{$cmName} .".fa -C -f $fastafile " . $alnFileNames{$cmName}) 
 		and die "FATAL: failed to execute esl-sfetch.\n[$!]";
 	    my $outFile = "$fastaRoot\-rnie.$cmName\.stk";
-	    print "Writing output to [$outFile]\n"  if ($verbose);
+	    print "\tSTK output:       [$outFile]\n" if ($verbose);
 	    my $modelString = '';
 	    $modelString .= $modelsDir   if defined $modelsDir;
 	    $modelString .= '/' . $model if defined $model;
@@ -246,13 +251,16 @@ exit(0);
 #fileRoot: strip the suffix off file names 
 sub fileRoot {
     my $file = shift;
+    #print "file=[$file]\n" if (defined $verbose);
     #strip /'s from the filename:
     my @file = split(/\//, $file);
     $file = pop(@file) if (@file>1);
     #strip file suffix off:
     @file = split(/\./, $file);
-    pop(@file) if (@file>1);
+    my $suff = pop(@file) if (scalar(@file)>1);
     $file = join('.', @file) if @file;
+    #print "suffix=[$suff]\n" if (defined $verbose && defined $suff);
+    #print "fileRoot=[$file]\n" if (defined $verbose);
     return $file;
 }
 
@@ -430,7 +438,7 @@ Options:       -h|--help                     Show this help.
 
                -e|--embl                     Produce output in EMBL format
                -g|--gff                      Produce output in GFF format
-	       -a|--aln                      Produce output in STK format
+	       -a|--aln                      Produce output in Stockholm (STK) format
 	       
 Dependencies:
 
