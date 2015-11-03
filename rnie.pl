@@ -123,8 +123,7 @@ if(!$tabfile && $fastafile){
     $cmsearchOptions .= join(' ', @cmsearchOptions) if @cmsearchOptions;
     my $cmsearchCmd = "cmsearch $cmsearchOptions --tabfile $tabfile  $modelString $fastafile > $cmsearchOut";
     print "Running:\n[$cmsearchCmd]\n" if $verbose;
-    system($cmsearchCmd) 
-	and die "FATAL: failed to execute cmsearch.\n[$!]";
+    system($cmsearchCmd) and die "FATAL: failed to execute [$cmsearchCmd].\n[$!]";
 }
 
 my @cmNames;

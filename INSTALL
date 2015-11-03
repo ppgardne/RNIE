@@ -6,6 +6,8 @@ Installation instructions
 
 Download and install Infernal:
 http://selab.janelia.org/software.html
+--NB: requires INFERNAL 1.0.2 (October 2009)
+------newer Infernal versions will require some reparameterisation
 
 Make sure the binaries cmsearch, cmalign and esl-sfetch are in your path. 
 
