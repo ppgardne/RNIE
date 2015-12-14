@@ -126,6 +126,7 @@ if(!$tabfile && $fastafile){
     system($cmsearchCmd) and die "FATAL: failed to execute [$cmsearchCmd].\n[$!]";
 }
 
+my %seqCountsByCm;
 my @cmNames;
 if(-s $tabfile){
     #print "tabfile: [$tabfile]\n" if (defined $verbose);
@@ -139,7 +140,9 @@ if(-s $tabfile){
       my( $model, $name, $start, $end, $qStart,$qEnd, $bits, $evalue, $gc );
       if($tabline=~/^# CM:\s+(\S+)/){
 	  $cmName=$1;
+	  print "CM: [$cmName] results!\n" if ($verbose); 
 	  push(@cmNames, $cmName);
+	  $seqCountsByCm{$cmName}=0;
       }
       elsif( (( $model, $name, $start, $end, $qStart,$qEnd, $bits, $evalue, $gc ) =
 	    ($tabline=~/^\s*(\S+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)$/)) || 
@@ -166,7 +169,7 @@ if(-s $tabfile){
 				      'cmName'  => $cmName,
 				      'cmNames' => $cmName . "=" . $bits
 		} );
-	  
+	  $seqCountsByCm{$cmName}++;
 	  $counter++;
       }
   }
@@ -179,6 +182,7 @@ if(-s $tabfile){
     my (%alnFileNames,%alnFilePointers);
     if ($alnOut){
 	foreach my $cmName (@cmNames){
+	    next if $seqCountsByCm{$cmName} == 0;
 	    my $alnFileName = "$fastaRoot\-rnie.$cmName\.namefile";
 	    $alnFileNames{$cmName} = $alnFileName;
 	    open($alnFilePointers{$cmName}, "> $alnFileName");
@@ -224,16 +228,30 @@ FT                    /gene=\42terminator" . $tag . "\42\n";
     close(GFF)  if $gffOut;
     if ($alnOut){
 	foreach my $cmName (@cmNames){
+	    next if $seqCountsByCm{$cmName} == 0;
+	    print "generating alignment for [$cmName]...\n" if ($verbose); 
 	    close($alnFilePointers{$cmName});
-	    system("esl-sfetch -o ". $alnFileNames{$cmName} .".fa -C -f $fastafile " . $alnFileNames{$cmName}) 
+	    my $sfetchCmd = "esl-sfetch -o ". $alnFileNames{$cmName} .".fa -C -f $fastafile " . $alnFileNames{$cmName};
+	    print "Fetching: [$sfetchCmd]\n" if ($verbose); 
+	    system($sfetchCmd) 
 		and die "FATAL: failed to execute esl-sfetch.\n[$!]";
 	    my $outFile = "$fastaRoot\-rnie.$cmName\.stk";
 	    print "\tSTK output:       [$outFile]\n" if ($verbose);
 	    my $modelString = '';
-	    $modelString .= $modelsDir   if defined $modelsDir;
-	    $modelString .= '/' . $model if defined $model;
 
-	    system("cmalign -l -o $outFile $modelString " . $alnFileNames{$cmName} . '.fa') 
+	    if (defined $modelsDir){
+		$modelString .= $modelsDir;
+		if( -s $modelString . "/$cmName" . '.cm' ){
+		    $modelString = $modelString . "/$cmName" . '.cm';
+		}
+		elsif( defined($model) ){
+		    $modelString .= '/' . $model;
+		}
+	    }
+
+	    my $cmalignCmd = "cmalign -l -o $outFile $modelString " . $alnFileNames{$cmName} . '.fa';
+	    print "Aligning matches: [$cmalignCmd]\n" if ($verbose); 
+	    system($cmalignCmd) 
 		and die "FATAL: failed to execute cmalign.\n[$!]";
 	}
 	
